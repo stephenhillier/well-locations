@@ -134,7 +134,7 @@ func (api *server) health(w http.ResponseWriter, req *http.Request) {
 
 // appRoutes registers application routes and returns a chi router.
 func (api *server) appRoutes(r chi.Router) chi.Router {
-	r.Route("/api/v1", func(r chi.Router) {
+	r.Route("/gwells/api/v1", func(r chi.Router) {
 		// Public routes
 		r.Group(func(r chi.Router) {
 			// server health check
