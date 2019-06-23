@@ -8,9 +8,10 @@ import (
 	"github.com/paulmach/orb/geojson"
 )
 
-func (api *server) WellLocations(w http.ResponseWriter, r *http.Request) {
+// GetWellLocations is a handler that responds to a request for well locations
+func (api *server) GetWellLocations(w http.ResponseWriter, r *http.Request) {
 	fc := geojson.NewFeatureCollection()
-	points, err := api.datastore.GetWellLocations()
+	points, err := api.datastore.AllWellLocations()
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, http.StatusText(500), 500)
@@ -23,8 +24,8 @@ func (api *server) WellLocations(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, fc)
 }
 
-// GetWellLocations retrieves all well points and returns them in a slice
-func (db *DB) GetWellLocations() ([]*PointLocation, error) {
+// AllWellLocations retrieves all well points and returns them in a slice
+func (db *DB) AllWellLocations() ([]*PointLocation, error) {
 	query := `
 		SELECT ST_AsBinary(geom)
 		FROM well

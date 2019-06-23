@@ -140,7 +140,7 @@ func (api *server) appRoutes(r chi.Router) chi.Router {
 		r.Group(func(r chi.Router) {
 			// server health check
 			r.Get("/health", api.health)
-			r.Get("/locations", gziphandler.GzipHandler(http.HandlerFunc(api.WellLocations)).ServeHTTP)
+			r.Get("/locations", gziphandler.GzipHandler(http.HandlerFunc(api.GetWellLocations)).ServeHTTP)
 		})
 	})
 	return r
