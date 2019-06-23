@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/NYTimes/gziphandler"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
@@ -139,7 +140,7 @@ func (api *server) appRoutes(r chi.Router) chi.Router {
 		r.Group(func(r chi.Router) {
 			// server health check
 			r.Get("/health", api.health)
-			r.Get("/locations", api.WellLocations)
+			r.Get("/locations", gziphandler.GzipHandler(http.HandlerFunc(api.WellLocations)).ServeHTTP)
 		})
 	})
 	return r
