@@ -26,7 +26,7 @@ func (api *server) WellLocations(w http.ResponseWriter, r *http.Request) {
 // GetWellLocations retrieves all well points and returns them in a slice
 func (db *DB) GetWellLocations() ([]*PointLocation, error) {
 	query := `
-		SELECT well_tag_number, ST_AsBinary(geom)
+		SELECT ST_AsBinary(geom)
 		FROM well
 	`
 
