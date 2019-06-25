@@ -15,7 +15,7 @@ type PointLocation struct {
 
 // MarshalJSON represents PointLocation (orb.Point) as JSON
 func (v PointLocation) MarshalJSON() ([]byte, error) {
-	return json.Marshal([]float64{v.Lat(), v.Lon()})
+	return json.Marshal([]float64{v.Lon(), v.Lat()})
 }
 
 // Scan allows scanning of PostGIS binary locations
