@@ -134,11 +134,11 @@ func (api *server) health(w http.ResponseWriter, req *http.Request) {
 
 // appRoutes registers application routes and returns a chi router.
 func (api *server) appRoutes(r chi.Router) chi.Router {
+	r.Get("/health", api.health)
 	r.Route("/gwells/api/v1", func(r chi.Router) {
 		// Public routes
 		r.Group(func(r chi.Router) {
 			// server health check
-			r.Get("/health", api.health)
 			r.Get("/locations", gziphandler.GzipHandler(http.HandlerFunc(api.GetWellLocations)).ServeHTTP)
 		})
 	})
