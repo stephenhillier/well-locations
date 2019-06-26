@@ -27,6 +27,8 @@ type Well struct {
 func (api *server) GetWellLocations(w http.ResponseWriter, r *http.Request) {
 	var jsondata []byte
 
+	// lock cache for reading and check expiry.  If cache is fresh,
+	// get the JSON data already stored and serve it as our response.
 	wellcache.mux.RLock()
 	if time.Now().Before(wellcache.expiry) {
 		jsondata = wellcache.Wells
@@ -41,8 +43,6 @@ func (api *server) GetWellLocations(w http.ResponseWriter, r *http.Request) {
 	// cache not valid, retrieve wells from database.
 	log.Println("responding from database")
 
-	fc := geojson.NewFeatureCollection()
-
 	points, err := api.datastore.AllWellLocations()
 	if err != nil {
 		log.Println(err.Error())
@@ -50,12 +50,17 @@ func (api *server) GetWellLocations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// load our well slice into a GeoJSON collection
+	// the well tag numbers will be put into the "properties" section
+	// of the geojson features.
+	fc := geojson.NewFeatureCollection()
 	for _, pt := range points {
 		new := geojson.NewFeature(pt.Location)
 		new.Properties["n"] = pt.WTN
 		fc.Append(new)
 	}
 
+	// form the JSON response
 	jsondata, err = json.Marshal(fc)
 	if err != nil {
 		log.Println(err.Error())

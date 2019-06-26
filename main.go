@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 
 	"github.com/NYTimes/gziphandler"
 	"github.com/go-chi/chi"
@@ -18,15 +19,15 @@ import (
 type server struct {
 	router    chi.Router
 	datastore DB
-	config    config
+	config    *config
 }
 
 // config holds server/database/auth service configuration
 type config struct {
-	// authCert         PEMCert // defined in auth.go
-	authAudience     string
-	authIssuer       string
-	authJWKSEndpoint string
+	AuthCert         PEMCert // defined in auth.go
+	AuthAudience     string
+	AuthIssuer       string
+	AuthJWKSEndpoint string
 	dbuser           string
 	dbpass           string
 	dbname           string
@@ -38,6 +39,7 @@ type config struct {
 	maxPageLimit     int
 	authGroupClaim   string
 	authRoleClaim    string
+	mux              sync.RWMutex
 }
 
 func main() {
@@ -45,7 +47,7 @@ func main() {
 	// set config parameters
 	// the flag library grabs values either from command line args, env variables, or the default specified here
 	// see github.com/namsral/flag
-	conf := config{}
+	conf := &config{}
 	flag.StringVar(&conf.dbdriver, "dbdriver", "postgres", "database driver")
 	flag.StringVar(&conf.dbuser, "dbuser", "gwells", "database username")
 	flag.StringVar(&conf.dbpass, "dbpass", "", "database password")
@@ -53,9 +55,9 @@ func main() {
 	flag.StringVar(&conf.dbhost, "dbhost", "127.0.0.1", "database service host")
 	flag.StringVar(&conf.dbport, "dbport", "5432", "database service port")
 	flag.StringVar(&conf.dbsslmode, "dbsslmode", "disable", "database ssl mode")
-	flag.StringVar(&conf.authAudience, "auth_audience", "", "authentication service audience claim")
-	flag.StringVar(&conf.authIssuer, "auth_issuer", "", "authentication service issuer claim")
-	flag.StringVar(&conf.authJWKSEndpoint, "jwks_endpoint", "/.well-known/jwks.json", "authentication JWKS endpoint")
+	flag.StringVar(&conf.AuthAudience, "auth_audience", "", "authentication service audience claim")
+	flag.StringVar(&conf.AuthIssuer, "auth_issuer", "", "authentication service issuer claim")
+	flag.StringVar(&conf.AuthJWKSEndpoint, "jwks_endpoint", "/.well-known/jwks.json", "authentication JWKS endpoint")
 	flag.Parse()
 
 	api := &server{}
@@ -64,20 +66,17 @@ func main() {
 	api.config.defaultPageLimit = 10
 	api.config.maxPageLimit = 100
 
-	// // get new certificate when server initially starts
-	// // see auth.go
-	// cert, err := api.getCert(nil)
-	// if err != nil {
-	// 	log.Panic(err)
-	// }
-
-	// api.config.authCert = cert
-
-	// api.config.authGroupClaim = api.config.authAudience + "/claims/authorization/groups"
-	// api.config.authRoleClaim = api.config.authAudience + "/claims/authorization/roles"
-
-	api.config.dbuser = os.Getenv("DBUSER")
-	api.config.dbpass = os.Getenv("DBPASS")
+	// get new certificate when server initially starts
+	// see auth.go
+	cert, err := api.config.GetCert(nil)
+	if err != nil {
+		log.Panic(err)
+	}
+	api.config.mux.Lock()
+	api.config.AuthCert = cert
+	api.config.authGroupClaim = api.config.AuthAudience + "/claims/authorization/groups"
+	api.config.authRoleClaim = api.config.AuthAudience + "/claims/authorization/roles"
+	api.config.mux.Unlock()
 
 	// create db connection and router and use them to create a new "Server" instance
 	db, err := api.NewDB()
