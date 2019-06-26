@@ -34,8 +34,6 @@ type PEMCert struct {
 	Expiry time.Time
 }
 
-var cert PEMCert
-
 // JWTAuthentication returns a new JWTMiddleware from the auth0 go-jwt-middleware package.
 // the JWTMiddleware can be used with chi middleware using jwtAuthentication().Handler
 func (config *config) JWTAuthentication() *jwtmiddleware.JWTMiddleware {
@@ -94,7 +92,7 @@ func (config *config) GetCert(token *jwt.Token) (PEMCert, error) {
 	log.Println("Fetching new JWKS from", config.AuthIssuer)
 	response, err := http.Get(config.AuthJWKSEndpoint)
 	if err != nil {
-		return cert, err
+		return config.AuthCert, err
 	}
 
 	defer response.Body.Close()
@@ -103,7 +101,7 @@ func (config *config) GetCert(token *jwt.Token) (PEMCert, error) {
 	var jwks = jwks{}
 	err = json.NewDecoder(response.Body).Decode(&jwks)
 	if err != nil {
-		return cert, err
+		return config.AuthCert, err
 	}
 
 	// find a key matching the token.
@@ -126,7 +124,7 @@ keys:
 		err := errors.New("unable to find appropriate key")
 		// return previously cached cert.
 		// this may happen if user has a token signed by an old key that was rotated out.
-		return cert, err
+		return config.AuthCert, err
 	}
 
 	return newCert, nil
