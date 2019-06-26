@@ -17,6 +17,12 @@ var wellcache struct {
 	Wells  []byte
 }
 
+// Well represents a well with a well tag number and a location
+type Well struct {
+	WTN      int64         `db:"well_tag_number"`
+	Location PointLocation `db:"geom"`
+}
+
 // GetWellLocations is a handler that responds to a request for well locations
 func (api *server) GetWellLocations(w http.ResponseWriter, r *http.Request) {
 	var jsondata []byte
@@ -45,7 +51,9 @@ func (api *server) GetWellLocations(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, pt := range points {
-		fc.Append(geojson.NewFeature(pt))
+		new := geojson.NewFeature(pt.Location)
+		new.Properties["well_tag_number"] = pt.WTN
+		fc.Append(new)
 	}
 
 	jsondata, err = json.Marshal(fc)
@@ -66,13 +74,13 @@ func (api *server) GetWellLocations(w http.ResponseWriter, r *http.Request) {
 }
 
 // AllWellLocations retrieves all well points and returns them in a slice
-func (db *DB) AllWellLocations() ([]*PointLocation, error) {
+func (db *DB) AllWellLocations() ([]*Well, error) {
 	query := `
-		SELECT ST_AsBinary(geom)
+		SELECT well_tag_number, ST_AsBinary(geom) AS geom
 		FROM well
 	`
 
-	points := []*PointLocation{}
+	points := []*Well{}
 
 	err := db.Select(&points, query)
 	return points, err
