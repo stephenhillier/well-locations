@@ -52,7 +52,7 @@ func (api *server) GetWellLocations(w http.ResponseWriter, r *http.Request) {
 
 	for _, pt := range points {
 		new := geojson.NewFeature(pt.Location)
-		new.Properties["well_tag_number"] = pt.WTN
+		new.Properties["n"] = pt.WTN
 		fc.Append(new)
 	}
 
